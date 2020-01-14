@@ -301,9 +301,38 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 			}
 
 			if fieldValue.Type() == reflect.TypeOf(time.Time{}) {
-				timeToAttribute(node.Attributes, args[1], fieldValue, iso8601, omitEmpty)
+				t := fieldValue.Interface().(time.Time)
+
+				if t.IsZero() {
+					continue
+				}
+
+				if iso8601 {
+					node.Attributes[args[1]] = t.UTC().Format(iso8601TimeFormat)
+				} else {
+					node.Attributes[args[1]] = t.Unix()
+				}
 			} else if fieldValue.Type() == reflect.TypeOf(new(time.Time)) {
-				timePtrToAttribute(node.Attributes, args[1], fieldValue, iso8601, omitEmpty)
+				// A time pointer may be nil
+				if fieldValue.IsNil() {
+					if omitEmpty {
+						continue
+					}
+
+					node.Attributes[args[1]] = nil
+				} else {
+					tm := fieldValue.Interface().(*time.Time)
+
+					if tm.IsZero() && omitEmpty {
+						continue
+					}
+
+					if iso8601 {
+						node.Attributes[args[1]] = tm.UTC().Format(iso8601TimeFormat)
+					} else {
+						node.Attributes[args[1]] = tm.Unix()
+					}
+				}
 			} else {
 				// Dealing with a fieldValue that is not a time
 				emptyValue := reflect.Zero(fieldValue.Type())
@@ -313,25 +342,11 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 					continue
 				}
 
-				// Check if this can be a string
 				strAttr, ok := fieldValue.Interface().(string)
 				if ok {
 					node.Attributes[args[1]] = strAttr
 				} else {
-					switch fieldValue.Kind() {
-					case reflect.Struct:
-						structToAttributes(node.Attributes, args[1], fieldValue)
-					case reflect.Ptr:
-						if !fieldValue.IsNil() {
-							ptrToAttributes(node.Attributes, args[1], fieldValue)
-						} else {
-							node.Attributes[args[1]] = nil
-						}
-					case reflect.Slice:
-						sliceToAttribtues(node.Attributes, args[1], fieldValue)
-					default:
-						node.Attributes[args[1]] = fieldValue.Interface()
-					}
+					node.Attributes[args[1]] = fieldValue.Interface()
 				}
 			}
 		} else if annotation == annotationRelation {
