@@ -1051,8 +1051,6 @@ func TestMarshalNestedStruct(t *testing.T) {
 		t.Fatalf("date map didn't contain attributes")
 	}
 
-	t.Logf("response : %+v", attributes)
-
 	boss, ok := attributes["boss"].(map[string]interface{})
 	if !ok {
 		t.Fatalf("attributes map didn't contain boss")
@@ -1060,6 +1058,85 @@ func TestMarshalNestedStruct(t *testing.T) {
 
 	if _, ok := boss["hired-at"].(string); !ok {
 		t.Fatalf("boss didn't contain hired-at : %+v", boss)
+	}
+
+	director, ok := attributes["director"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("director not set")
+	}
+
+	if _, ok := director["firstname"].(string); !ok {
+		t.Fatalf("directors names not set")
+	}
+}
+
+func TestMarshalStructSlice(t *testing.T) {
+	hiredAt := time.Now()
+	company := &Company{
+		ID:   "1",
+		Name: "Planet Express",
+		Teams: []Team{
+			Team{
+				Name: "dev",
+				Leader: &Employee{
+					Firstname: "Peter",
+					Surname:   "Parker",
+					Age:       16,
+					HiredAt:   &hiredAt,
+				},
+				Members: []Employee{
+					Employee{
+						Firstname: "Lincoln",
+						Surname:   "Burrows",
+						Age:       32,
+						HiredAt:   &hiredAt,
+					},
+					Employee{
+						Firstname: "Teador",
+						Surname:   "Bagwells",
+						Age:       42,
+						HiredAt:   &hiredAt,
+					},
+				},
+			},
+			Team{
+				Name: "hr",
+				Leader: &Employee{
+					Firstname: "Kim",
+					Surname:   "Hwan",
+					Age:       99,
+					HiredAt:   &hiredAt,
+				},
+				Members: []Employee{
+					Employee{
+						Firstname: "Sara",
+						Surname:   "Benda",
+						Age:       32,
+						HiredAt:   &hiredAt,
+					},
+				},
+			},
+		},
+		FoundedAt: time.Now(),
+	}
+
+	var jsonData map[string]interface{}
+
+	// One
+	out1 := bytes.NewBuffer(nil)
+	MarshalPayload(out1, company)
+
+	if err := json.Unmarshal(out1.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, ok := jsonData["data"].(map[string]interface{}); !ok {
+		t.Fatalf("data key did not contain an Hash/Dict/Map")
+	}
+
+	attributes, ok := jsonData["data"].(map[string]interface{})["attributes"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("date map didn't contain attributes")
 	}
 
 	teams, ok := attributes["teams"].([]interface{})
@@ -1104,12 +1181,4 @@ func TestMarshalNestedStruct(t *testing.T) {
 		t.Fatalf("expected `len(members)` to be 2, but got `%d`", len(members))
 	}
 
-	director, ok := attributes["director"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("director not set")
-	}
-
-	if _, ok := director["firstname"].(string); !ok {
-		t.Fatalf("directors names not set")
-	}
 }

@@ -173,11 +173,16 @@ type Team struct {
 }
 
 type Employee struct {
-	Firstname string     `jsonapi:"attr,firstname"`
-	Surname   string     `jsonapi:"attr,surname"`
-	Age       int        `jsonapi:"attr,age"`
-	HiredAt   *time.Time `jsonapi:"attr,hired-at,iso8601"`
-	Emails    []string   `jsonapi:"attr,emails"`
+	Firstname   string     `jsonapi:"attr,firstname"`
+	Surname     string     `jsonapi:"attr,surname"`
+	Age         int        `jsonapi:"attr,age"`
+	HiredAt     *time.Time `jsonapi:"attr,hired-at,iso8601"`
+	Emails      []string   `jsonapi:"attr,emails"`
+	EmptyHelper *Helper
+}
+
+type Helper struct {
+	Test string
 }
 
 type CustomIntType int
