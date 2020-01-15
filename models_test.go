@@ -178,7 +178,12 @@ type Employee struct {
 	Age         int        `jsonapi:"attr,age"`
 	HiredAt     *time.Time `jsonapi:"attr,hired-at,iso8601"`
 	Emails      []string   `jsonapi:"attr,emails"`
+	Equipment   []Item     `jsonapi:"attr,equipment"`
 	EmptyHelper *Helper
+}
+
+type Item struct {
+	Name string `jsonapi:"attr,title"`
 }
 
 type Helper struct {

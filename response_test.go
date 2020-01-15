@@ -1092,6 +1092,11 @@ func TestMarshalStructSlice(t *testing.T) {
 						Age:       32,
 						HiredAt:   &hiredAt,
 						Emails:    []string{"linc@foxriver.com", "linc@panam.com"},
+						Equipment: []Item{
+							Item{Name: "PC"},
+							Item{Name: "Mouse"},
+							Item{Name: "Keyboard"},
+						},
 					},
 					Employee{
 						Firstname: "Teador",
@@ -1155,7 +1160,7 @@ func TestMarshalStructSlice(t *testing.T) {
 		t.Fatalf("failure on unmarshaling team1")
 	}
 
-	//t.Logf("team : %+v", team1)
+	t.Logf("team : %+v", team1)
 
 	name, ok := team1["name"].(string)
 	if !ok {
@@ -1197,6 +1202,16 @@ func TestMarshalStructSlice(t *testing.T) {
 
 	if len(emails) != 2 {
 		t.Fatalf("expected 'len(emails)' to be '2' got '%d'", len(emails))
+	}
+
+	equipment, ok := linc["equipment"].([]interface{})
+	if !ok {
+		t.Logf("linc : %+v", linc)
+		t.Fatalf("equipment not set")
+	}
+
+	if len(equipment) != 3 {
+		t.Fatalf("expected 'len(equipment)', to be '3' got '%d'", len(equipment))
 	}
 
 }
