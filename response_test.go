@@ -1002,6 +1002,7 @@ func TestMarshalNestedStruct(t *testing.T) {
 						Surname:   "Burrows",
 						Age:       32,
 						HiredAt:   &hiredAt,
+						Emails:    []string{"linc@foxriver.com", "linc@panam.com"},
 					},
 					Employee{
 						Firstname: "Teador",
@@ -1090,6 +1091,7 @@ func TestMarshalStructSlice(t *testing.T) {
 						Surname:   "Burrows",
 						Age:       32,
 						HiredAt:   &hiredAt,
+						Emails:    []string{"linc@foxriver.com", "linc@panam.com"},
 					},
 					Employee{
 						Firstname: "Teador",
@@ -1179,6 +1181,22 @@ func TestMarshalStructSlice(t *testing.T) {
 
 	if len(members) != 2 {
 		t.Fatalf("expected `len(members)` to be 2, but got `%d`", len(members))
+	}
+
+	linc, ok := members[0].(map[string]interface{})
+	if name, ok := linc["firstname"].(string); !ok || name != "Lincoln" {
+		t.Logf("linc : %+v", linc)
+		t.Fatalf("team members name not set")
+	}
+
+	emails, ok := linc["emails"].([]interface{})
+	if !ok {
+		t.Logf("linc : %+v", linc)
+		t.Fatalf("emails not set")
+	}
+
+	if len(emails) != 2 {
+		t.Fatalf("expected 'len(emails)' to be '2' got '%d'", len(emails))
 	}
 
 }
