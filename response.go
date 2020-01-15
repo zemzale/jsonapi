@@ -502,6 +502,9 @@ func structToInterfaceMap(fieldValue reflect.Value) map[string]interface{} {
 		)
 		subField := fieldValue.Field(i)
 		tag := fieldValue.Type().Field(i).Tag.Get(annotationJSONAPI)
+		if tag == "" {
+			continue
+		}
 		args := strings.Split(tag, annotationSeperator)
 
 		if len(args) > 2 {
