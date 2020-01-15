@@ -531,6 +531,8 @@ func structToInterfaceMap(fieldValue reflect.Value) map[string]interface{} {
 				ptrToAttributes(subNode, args[1], subField)
 			case reflect.Struct:
 				structToAttributes(subNode, args[1], subField)
+			case reflect.Slice:
+				sliceToAttribtues(subNode, args[1], subField)
 			default:
 				subNode[args[1]] = subField.Interface()
 			}
