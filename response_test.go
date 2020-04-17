@@ -1215,3 +1215,91 @@ func TestMarshalStructSlice(t *testing.T) {
 	}
 
 }
+
+func TestMarshalEmbededStruct(t *testing.T) {
+	embededItem := &SpecificItem{
+		ID:      "1",
+		OrderID: "123",
+		Item:    Item{Name: "thing"},
+	}
+
+	var jsonData map[string]interface{}
+
+	// One
+	out1 := bytes.NewBuffer(nil)
+	if err := MarshalPayload(out1, embededItem); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := json.Unmarshal(out1.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%+v", jsonData)
+
+	if _, ok := jsonData["data"].(map[string]interface{}); !ok {
+		t.Fatalf("data key did not contain an Hash/Dict/Map")
+	}
+
+	attributes, ok := jsonData["data"].(map[string]interface{})["attributes"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("date map didn't contain attributes")
+	}
+
+	orderID, ok := attributes["order-id"].(string)
+	if !ok {
+		t.Fatalf("attributes map didn't contain order-id")
+	}
+	if orderID != embededItem.OrderID {
+		t.Fatalf("expected order ID to be `%s` but got `%s`", embededItem.OrderID, orderID)
+	}
+
+	name, ok := attributes["title"].(string)
+	if !ok {
+		t.Fatalf("attributes map didn't contain name")
+	}
+
+	if name != embededItem.Item.Name {
+		t.Fatalf("expected name to be `%s` but got `%s`", embededItem.Item.Name, name)
+	}
+}
+
+func TestOnlyEmbed(t *testing.T) {
+	embededItem := &ItemWithOnlyEmbed{
+		ID:   "1",
+		Item: Item{Name: "thing"},
+		//TODO test if embeded struct relationships are not being embeded
+	}
+
+	var jsonData map[string]interface{}
+
+	// One
+	out1 := bytes.NewBuffer(nil)
+	if err := MarshalPayload(out1, embededItem); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := json.Unmarshal(out1.Bytes(), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("%+v", jsonData)
+
+	if _, ok := jsonData["data"].(map[string]interface{}); !ok {
+		t.Fatalf("data key did not contain an Hash/Dict/Map")
+	}
+
+	attributes, ok := jsonData["data"].(map[string]interface{})["attributes"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("date map didn't contain attributes")
+	}
+
+	name, ok := attributes["title"].(string)
+	if !ok {
+		t.Fatalf("attributes map didn't contain name")
+	}
+
+	if name != embededItem.Item.Name {
+		t.Fatalf("expected name to be `%s` but got `%s`", embededItem.Item.Name, name)
+	}
+}

@@ -182,6 +182,17 @@ type Employee struct {
 	EmptyHelper *Helper
 }
 
+type SpecificItem struct {
+	ID      string `jsonapi:"primary,item"`
+	OrderID string `jsonapi:"attr,order-id"`
+	Item    `jsonapi:"embed"`
+}
+
+type ItemWithOnlyEmbed struct {
+	ID   string `jsonapi:"primary,item"`
+	Item `jsonapi:"embed"`
+}
+
 type Item struct {
 	Name string `jsonapi:"attr,title"`
 }

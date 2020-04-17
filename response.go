@@ -225,7 +225,8 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 		annotation := args[0]
 
 		if (annotation == annotationClientID && len(args) != 1) ||
-			(annotation != annotationClientID && len(args) < 2) {
+			(annotation == annotationEmbeded && len(args) != 1) ||
+			(annotation != annotationClientID && annotation != annotationEmbeded && len(args) < 2) {
 			er = ErrBadJSONAPIStructTag
 			break
 		}
@@ -282,58 +283,10 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 			if clientID != "" {
 				node.ClientID = clientID
 			}
+		} else if annotation == annotationEmbeded {
+			visitEmbededNode(node, fieldValue)
 		} else if annotation == annotationAttribute {
-			var omitEmpty, iso8601 bool
-
-			if len(args) > 2 {
-				for _, arg := range args[2:] {
-					switch arg {
-					case annotationOmitEmpty:
-						omitEmpty = true
-					case annotationISO8601:
-						iso8601 = true
-					}
-				}
-			}
-
-			if node.Attributes == nil {
-				node.Attributes = make(map[string]interface{})
-			}
-
-			if fieldValue.Type() == reflect.TypeOf(time.Time{}) {
-				timeToAttribute(node.Attributes, args[1], fieldValue, iso8601, omitEmpty)
-			} else if fieldValue.Type() == reflect.TypeOf(new(time.Time)) {
-				timePtrToAttribute(node.Attributes, args[1], fieldValue, iso8601, omitEmpty)
-			} else {
-				// Dealing with a fieldValue that is not a time
-				emptyValue := reflect.Zero(fieldValue.Type())
-
-				// See if we need to omit this field
-				if omitEmpty && reflect.DeepEqual(fieldValue.Interface(), emptyValue.Interface()) {
-					continue
-				}
-
-				// Check if this can be a string
-				strAttr, ok := fieldValue.Interface().(string)
-				if ok {
-					node.Attributes[args[1]] = strAttr
-				} else {
-					switch fieldValue.Kind() {
-					case reflect.Struct:
-						structToAttributes(node.Attributes, args[1], fieldValue)
-					case reflect.Ptr:
-						if !fieldValue.IsNil() {
-							ptrToAttributes(node.Attributes, args[1], fieldValue)
-						} else {
-							node.Attributes[args[1]] = nil
-						}
-					case reflect.Slice:
-						sliceToAttribtues(node.Attributes, args[1], fieldValue)
-					default:
-						node.Attributes[args[1]] = fieldValue.Interface()
-					}
-				}
-			}
+			visitAttributeNode(args, node, fieldValue)
 		} else if annotation == annotationRelation {
 			var omitEmpty bool
 
@@ -450,6 +403,94 @@ func visitModelNode(model interface{}, included *map[string]*Node,
 	}
 
 	return node, nil
+}
+
+func visitEmbededNode(node *Node, emdedValue reflect.Value) (*Node, error) {
+	//TODO check if the embeded node is something else then struct
+	var er error
+	for i := 0; i < emdedValue.NumField(); i++ {
+		structField := emdedValue.Type().Field(i)
+		tag := structField.Tag.Get(annotationJSONAPI)
+		if tag == "" {
+			continue
+		}
+
+		fieldValue := emdedValue.Field(i)
+
+		args := strings.Split(tag, annotationSeperator)
+
+		if len(args) < 1 {
+			er = ErrBadJSONAPIStructTag
+			break
+		}
+
+		annotation := args[0]
+
+		if (annotation == annotationClientID && len(args) != 1) ||
+			(annotation == annotationEmbeded && len(args) != 1) ||
+			(annotation != annotationClientID && annotation != annotationEmbeded && len(args) < 2) {
+			er = ErrBadJSONAPIStructTag
+			break
+		}
+		if annotation == annotationAttribute {
+			visitAttributeNode(args, node, fieldValue)
+		}
+	}
+	return node, er
+}
+
+func visitAttributeNode(args []string, node *Node, fieldValue reflect.Value) {
+	var omitEmpty, iso8601 bool
+
+	if len(args) > 2 {
+		for _, arg := range args[2:] {
+			switch arg {
+			case annotationOmitEmpty:
+				omitEmpty = true
+			case annotationISO8601:
+				iso8601 = true
+			}
+		}
+	}
+
+	if node.Attributes == nil {
+		node.Attributes = make(map[string]interface{})
+	}
+
+	if fieldValue.Type() == reflect.TypeOf(time.Time{}) {
+		timeToAttribute(node.Attributes, args[1], fieldValue, iso8601, omitEmpty)
+	} else if fieldValue.Type() == reflect.TypeOf(new(time.Time)) {
+		timePtrToAttribute(node.Attributes, args[1], fieldValue, iso8601, omitEmpty)
+	} else {
+		// Dealing with a fieldValue that is not a time
+		emptyValue := reflect.Zero(fieldValue.Type())
+
+		// See if we need to omit this field
+		if omitEmpty && reflect.DeepEqual(fieldValue.Interface(), emptyValue.Interface()) {
+			return
+		}
+
+		// Check if this can be a string
+		strAttr, ok := fieldValue.Interface().(string)
+		if ok {
+			node.Attributes[args[1]] = strAttr
+		} else {
+			switch fieldValue.Kind() {
+			case reflect.Struct:
+				structToAttributes(node.Attributes, args[1], fieldValue)
+			case reflect.Ptr:
+				if !fieldValue.IsNil() {
+					ptrToAttributes(node.Attributes, args[1], fieldValue)
+				} else {
+					node.Attributes[args[1]] = nil
+				}
+			case reflect.Slice:
+				sliceToAttribtues(node.Attributes, args[1], fieldValue)
+			default:
+				node.Attributes[args[1]] = fieldValue.Interface()
+			}
+		}
+	}
 }
 
 func timeToAttribute(node map[string]interface{}, fieldName string, fieldValue reflect.Value, iso8601, omitEmpty bool) {
